@@ -216,12 +216,9 @@ configure_streaming_replication() {
 
 # MAIN ROUTINE
 install_postgresql_service
-
-setup_datadisks
 service postgresql start
 update-rc.d postgresql enable
 -i -u postgres psql -c "CREATE EXTENSION citus;"
-configure_streaming_replication
 
 service postgresql start
 
