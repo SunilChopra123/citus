@@ -92,16 +92,13 @@ logger "NOW=$now MASTERIP=$MASTERIP SUBNETADDRESS=$SUBNETADDRESS NODETYPE=$NODET
 install_postgresql_service() {
 	logger "Start installing PostgreSQL..."
 	# Re-synchronize the package index files from their sources. An update should always be performed before an upgrade.
-	apt-get -y update
-
+	curl https://install.citusdata.com/community/deb.sh | sudo bash
+	
 	# Install PostgreSQL if it is not yet installed
-	if [ $(dpkg-query -W -f='${Status}' postgresql 2>/dev/null | grep -c "ok installed") -eq 0 ];
-	then
 	   apt-get -y install postgresql-9.6-citus-7.0
 	   pg_conftool 9.6 main set shared_preload_libraries citus
        pg_conftool 9.6 main set listen_addresses '*'
-       cat > /etc/postgresql/9.6/main/pg_hba.conf <<DELIM
-
+       cat > /etc/postgresql/9.6/main/pg_hba.conf  <<DELIM
 # Allow unrestricted access to nodes in the local network. The following ranges
 # correspond to 24, 20, and 16-bit blocks in Private IPv4 address spaces.
 host    all             all             10.0.0.0/8              trust
@@ -110,7 +107,6 @@ host    all             all             10.0.0.0/8              trust
 host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 DELIM
-	fi
 	
 	logger "Done installing PostgreSQL..."
 }
