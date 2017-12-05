@@ -139,12 +139,14 @@ setup_datadisks() {
 configure_streaming_replication() {
 	logger "Starting configuring PostgreSQL streaming replication..."
 	
+
 	# Configure the MASTER node
 	if [ "$NODETYPE" == "MASTER" ];
 	then
 		logger "Create user replicator..."
-		echo "CREATE USER replicator WITH REPLICATION PASSWORD '$PGPASSWORD';"
-		sudo -u postgres psql -c "CREATE USER replicator WITH REPLICATION PASSWORD '$PGPASSWORD';"
+		echo "CREATEEXTENSION citus;"
+		sudo update-rc.d postgresql enable
+		sudo -i -u postgres psql -c "CREATE EXTENSION citus;"
 	fi
 
 	# Stop service
@@ -195,20 +197,21 @@ configure_streaming_replication() {
 	if [ "$NODETYPE" == "SLAVE" ];
 	then
 		# Remove all files from the slave data directory
-		logger "Remove all files from the slave data directory"
-		sudo -u postgres rm -rf /datadisks/disk1/main
+		#logger "Remove all files from the slave data directory"
+		#sudo -u postgres rm -rf /datadisks/disk1/main
 
 		# Make a binary copy of the database cluster files while making sure the system is put in and out of backup mode automatically
-		logger "Make binary copy of the data directory from master"
-		sudo PGPASSWORD=$PGPASSWORD -u postgres pg_basebackup -h $MASTERIP -D /datadisks/disk1/main -U replicator -x
+		echo "CREATEEXTENSION citus;"
+		sudo update-rc.d postgresql enable
+		sudo -i -u postgres psql -c "CREATE EXTENSION citus;"
 		 
 		# Create recovery file
-		logger "Create recovery.conf file"
-		cd /var/lib/postgresql/9.6/main/
+		#logger "Create recovery.conf file"
+		#cd /var/lib/postgresql/9.6/main/
 		
-		sudo -u postgres echo "standby_mode = 'on'" > recovery.conf
-		sudo -u postgres echo "primary_conninfo = 'host=$MASTERIP port=5432 user=replicator password=$PGPASSWORD'" >> recovery.conf
-		sudo -u postgres echo "trigger_file = '/var/lib/postgresql/9.6/main/failover'" >> recovery.conf
+		#sudo -u postgres echo "standby_mode = 'on'" > recovery.conf
+		#sudo -u postgres echo "primary_conninfo = 'host=$MASTERIP port=5432 user=replicator password=$PGPASSWORD'" >> recovery.conf
+		#sudo -u postgres echo "trigger_file = '/var/lib/postgresql/9.6/main/failover'" >> recovery.conf
 	fi
 	
 	logger "Done configuring PostgreSQL streaming replication"
@@ -216,9 +219,10 @@ configure_streaming_replication() {
 
 # MAIN ROUTINE
 install_postgresql_service
+
 service postgresql start
-update-rc.d postgresql enable
--i -u postgres psql -c "CREATE EXTENSION citus;"
+
+configure_streaming_replication
 
 service postgresql start
 
